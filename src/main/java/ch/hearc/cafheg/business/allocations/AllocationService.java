@@ -2,12 +2,16 @@ package ch.hearc.cafheg.business.allocations;
 
 import ch.hearc.cafheg.infrastructure.persistance.AllocataireMapper;
 import ch.hearc.cafheg.infrastructure.persistance.AllocationMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class AllocationService {
-
   private static final String PARENT_1 = "Parent1";
   private static final String PARENT_2 = "Parent2";
 
@@ -22,7 +26,7 @@ public class AllocationService {
   }
 
   public List<Allocataire> findAllAllocataires(String likeNom) {
-    System.out.println("Rechercher tous les allocataires");
+    log.info("Rechercher tous les allocataires");
     return allocataireMapper.findAll(likeNom);
   }
 
