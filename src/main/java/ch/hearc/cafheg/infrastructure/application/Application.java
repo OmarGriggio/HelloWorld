@@ -28,7 +28,7 @@ public class Application extends SpringBootServletInitializer {
     Migrations migrations = new Migrations(database);
 
     database.start();
-    migrations.start();
+    migrations.start("classpath:db");
   }
 
   /**
