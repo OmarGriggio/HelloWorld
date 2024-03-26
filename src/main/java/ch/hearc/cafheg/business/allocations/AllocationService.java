@@ -27,6 +27,7 @@ public class AllocationService {
 
   public List<Allocataire> findAllAllocataires(String likeNom) {
     log.info("Rechercher tous les allocataires");
+    log.debug("Test");
     return allocataireMapper.findAll(likeNom);
   }
 
@@ -35,7 +36,8 @@ public class AllocationService {
   }
 
   public String getParentDroitAllocation(Map<String, Object> parameters) {
-    System.out.println("Déterminer quel parent a le droit aux allocations");
+    log.info("Déterminer quel parent a le droit aux allocations");
+    log.debug("Test");
     String eR = (String)parameters.getOrDefault("enfantResidence", "");
     Boolean p1AL = (Boolean)parameters.getOrDefault("parent1ActiviteLucrative", false);
     String p1Residence = (String)parameters.getOrDefault("parent1Residence", "");
