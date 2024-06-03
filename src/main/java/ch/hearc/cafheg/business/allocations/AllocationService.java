@@ -6,14 +6,9 @@ import ch.hearc.cafheg.infrastructure.persistance.AllocationMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.math.BigDecimal;
 import java.util.List;
 
-@RestController
-@RequestMapping("/allocations")
+
 public class AllocationService {
   static final String PARENT_1 = "Parent1";
   static final String PARENT_2 = "Parent2";
@@ -90,7 +85,37 @@ public class AllocationService {
         }
       }
     }
-
     throw new IllegalArgumentException("Invalid parameters for determining right allocation parent.");
   }
+
+  public void updateAllocataire(long id, String newNom, String newPrenom) {
+    Allocataire existingAllocataire = allocataireMapper.findById(id);
+    if (existingAllocataire == null) {
+      throw new IllegalArgumentException("Allocataire not found");
+    }
+
+    boolean isNomChanged = !existingAllocataire.getNom().equals(newNom);
+    boolean isPrenomChanged = !existingAllocataire.getPrenom().equals(newPrenom);
+
+    if (isNomChanged || isPrenomChanged) {
+      Allocataire updatedAllocataire = new Allocataire(existingAllocataire.getNoAVS(), newNom, newPrenom);
+      allocataireMapper.update(updatedAllocataire);
+    } else {
+      throw new IllegalArgumentException("No changes detected in nom or prenom");
+    }
+  }
+
+  public void deleteAllocataire(long id) {
+    Allocataire allocataire = allocataireMapper.findById(id);
+    if (allocataire == null) {
+      throw new IllegalArgumentException("Allocataire not found");
+    }
+
+    if (allocataireMapper.hasPayments(allocataire.getNoAVS().toString())) {
+      throw new IllegalArgumentException("Cannot delete allocataire with payments");
+    }
+
+    allocataireMapper.deleteById(id);
+  }
+
 }
