@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.util.*;
 
 @RestController
+@RequestMapping("/allocataires")
 public class RESTController {
 
   private final AllocationService allocationService;
@@ -30,27 +31,13 @@ public class RESTController {
             new PDFExporter(new EnfantMapper()));
   }
 
-  /*
-  // Headers de la requête HTTP doit contenir "Content-Type: application/json"
-  // BODY de la requête HTTP à transmettre afin de tester le endpoint
-  {
-      "enfantResidence" : "Neuchâtel",
-      "parent1Residence" : "Neuchâtel",
-      "parent2Residence" : "Bienne",
-      "parent1ActiviteLucrative" : true,
-      "parent2ActiviteLucrative" : true,
-      "parent1Salaire" : 2500,
-      "parent2Salaire" : 3000
-  }
-   */
   @PostMapping("/droits/quel-parent")
-  public String getParentDroitAllocation(@RequestBody Map<String, Object> params) {
-    return inTransaction(() -> allocationService.getParentDroitAllocation((ParentDroitAllocationParams) params));
+  public String getParentDroitAllocation(@RequestBody ParentDroitAllocationParams params) {
+    return inTransaction(() -> allocationService.getParentDroitAllocation(params));
   }
 
-  @GetMapping("/allocataires")
-  public List<Allocataire> allocataires(
-          @RequestParam(value = "startsWith", required = false) String start) {
+  @GetMapping
+  public List<Allocataire> allocataires(@RequestParam(value = "startsWith", required = false) String start) {
     return inTransaction(() -> allocationService.findAllAllocataires(start));
   }
 
@@ -66,8 +53,7 @@ public class RESTController {
 
   @GetMapping("/allocations-naissances/{year}/somme")
   public BigDecimal sommeAns(@PathVariable("year") int year) {
-    return inTransaction(
-            () -> versementService.findSommeAllocationNaissanceParAnnee(year).getValue());
+    return inTransaction(() -> versementService.findSommeAllocationNaissanceParAnnee(year).getValue());
   }
 
   @GetMapping(value = "/allocataires/{allocataireId}/allocations", produces = MediaType.APPLICATION_PDF_VALUE)
