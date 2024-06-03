@@ -27,7 +27,7 @@ public class RESTController {
   public RESTController() {
     this.allocationService = new AllocationService(new AllocataireMapper(), new AllocationMapper());
     this.versementService = new VersementService(new VersementMapper(), new AllocataireMapper(),
-        new PDFExporter(new EnfantMapper()));
+            new PDFExporter(new EnfantMapper()));
   }
 
   /*
@@ -43,7 +43,6 @@ public class RESTController {
       "parent2Salaire" : 3000
   }
    */
-
   @PostMapping("/droits/quel-parent")
   public String getParentDroitAllocation(@RequestBody Map<String, Object> params) {
     return inTransaction(() -> allocationService.getParentDroitAllocation((ParentDroitAllocationParams) params));
@@ -51,7 +50,7 @@ public class RESTController {
 
   @GetMapping("/allocataires")
   public List<Allocataire> allocataires(
-      @RequestParam(value = "startsWith", required = false) String start) {
+          @RequestParam(value = "startsWith", required = false) String start) {
     return inTransaction(() -> allocationService.findAllAllocataires(start));
   }
 
@@ -68,7 +67,7 @@ public class RESTController {
   @GetMapping("/allocations-naissances/{year}/somme")
   public BigDecimal sommeAns(@PathVariable("year") int year) {
     return inTransaction(
-        () -> versementService.findSommeAllocationNaissanceParAnnee(year).getValue());
+            () -> versementService.findSommeAllocationNaissanceParAnnee(year).getValue());
   }
 
   @GetMapping(value = "/allocataires/{allocataireId}/allocations", produces = MediaType.APPLICATION_PDF_VALUE)
@@ -81,16 +80,21 @@ public class RESTController {
     return inTransaction(() -> versementService.exportPDFVersements(allocataireId));
   }
 
-  @DeleteMapping("/allocataires/{id}")
-  public String deleteAllocataireById(@PathVariable int id) {
-    return inTransaction(() -> allocationService.deleteAllocataireById(id));
+  @PutMapping("/{id}")
+  public void updateAllocataire(@PathVariable("id") long id, @RequestBody Map<String, String> params) {
+    String newNom = params.get("nom");
+    String newPrenom = params.get("prenom");
+    inTransaction(() -> {
+      allocationService.updateAllocataire(id, newNom, newPrenom);
+      return null;
+    });
   }
 
-  @PutMapping("/allocataires/{id}")
-  public String updateAllocataireName(@PathVariable int id, @RequestBody Map<String, String> params) {
-    String nom = params.get("nom");
-    String prenom = params.get("prenom");
-    return inTransaction(() -> allocationService.updateAllocataireName(nom, prenom, id));
+  @DeleteMapping("/{id}")
+  public void deleteAllocataire(@PathVariable("id") long id) {
+    inTransaction(() -> {
+      allocationService.deleteAllocataire(id);
+      return null;
+    });
   }
-
 }
