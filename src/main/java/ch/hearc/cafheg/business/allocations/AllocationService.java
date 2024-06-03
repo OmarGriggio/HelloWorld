@@ -11,8 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
+@RestController
+@RequestMapping("/allocations")
 public class AllocationService {
   private static final String PARENT_1 = "Parent1";
   private static final String PARENT_2 = "Parent2";
@@ -23,8 +24,8 @@ public class AllocationService {
   private final Logger log = LoggerFactory.getLogger(AllocationService.class);
 
   public AllocationService(
-      AllocataireMapper allocataireMapper,
-      AllocationMapper allocationMapper) {
+          AllocataireMapper allocataireMapper,
+          AllocationMapper allocationMapper) {
     this.allocataireMapper = allocataireMapper;
     this.allocationMapper = allocationMapper;
   }
@@ -38,25 +39,14 @@ public class AllocationService {
     return allocationMapper.findAll();
   }
 
-  public String getParentDroitAllocation(Map<String, Object> parameters) {
+  public String getParentDroitAllocation(ParentDroitAllocationParams params) {
     System.out.println("Déterminer quel parent a le droit aux allocations");
-    String eR = (String)parameters.getOrDefault("enfantResidence", "");
-    Boolean p1AL = (Boolean)parameters.getOrDefault("parent1ActiviteLucrative", false);
-    String p1Residence = (String)parameters.getOrDefault("parent1Residence", "");
-    Boolean p2AL = (Boolean)parameters.getOrDefault("parent2ActiviteLucrative", false);
-    String p2Residence = (String)parameters.getOrDefault("parent2Residence", "");
-    Boolean pEnsemble = (Boolean)parameters.getOrDefault("parentsEnsemble", false);
-    Number salaireP1 = (Number) parameters.getOrDefault("parent1Salaire", BigDecimal.ZERO);
-    Number salaireP2 = (Number) parameters.getOrDefault("parent2Salaire", BigDecimal.ZERO);
-
-    if(p1AL && !p2AL) {
+    if (params.getParent1ActiviteLucrative() && !params.getParent2ActiviteLucrative()) {
       return PARENT_1;
     }
-
-    if(p2AL && !p1AL) {
+    if (params.getParent2ActiviteLucrative() && !params.getParent1ActiviteLucrative()) {
       return PARENT_2;
     }
-
-    return salaireP1.doubleValue() > salaireP2.doubleValue() ? PARENT_1 : PARENT_2;
+    return params.getParent1Salaire().compareTo(params.getParent2Salaire()) > 0 ? PARENT_1 : PARENT_2;
   }
 }
