@@ -91,7 +91,7 @@ public class AllocataireMapper extends Mapper {
     }
   }
 
-  private boolean hasPayments(String avsNumber) {
+  public boolean hasPayments(String avsNumber) {
     Connection connection = activeJDBCConnection();
     try {
       System.out.println("SQL: " + QUERY_SELECT_ALL_VERSEMENTS_WHERE_NUMERO);
@@ -104,10 +104,10 @@ public class AllocataireMapper extends Mapper {
     }
   }
 
-  public String deleteByAvsNumber(String avsNumber) {
+  public void deleteByAvsNumber(String avsNumber) {
     System.out.println("deleteByAvsNumber() " + avsNumber);
     if (hasPayments(avsNumber)) {
-      return "Allocataire with AVS number " + avsNumber + " has linked payments, can't delete.";
+      throw new IllegalArgumentException("Allocataire with AVS number " + avsNumber + " has linked payments, can't delete.");
     }
     Connection connection = activeJDBCConnection();
     try {
@@ -115,10 +115,8 @@ public class AllocataireMapper extends Mapper {
       PreparedStatement preparedStatement = connection.prepareStatement(QUERY_DELETE_BY_AVS);
       preparedStatement.setString(1, avsNumber);
       int rowsAffected = preparedStatement.executeUpdate();
-      if (rowsAffected > 0) {
-        return "Allocataire with AVS number " + avsNumber + " deleted successfully.";
-      } else {
-        return "Allocataire with AVS number " + avsNumber + " not found.";
+      if (rowsAffected == 0) {
+        throw new IllegalArgumentException("Allocataire with AVS number " + avsNumber + " not found.");
       }
     } catch (SQLException e) {
       throw new RuntimeException(e);

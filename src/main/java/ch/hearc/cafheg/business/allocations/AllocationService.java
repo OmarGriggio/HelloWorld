@@ -105,6 +105,7 @@ public class AllocationService {
     }
   }
 
+
   public void deleteAllocataire(long id) {
     Allocataire allocataire = allocataireMapper.findById(id);
     if (allocataire == null) {
@@ -115,7 +116,6 @@ public class AllocationService {
       throw new IllegalArgumentException("Cannot delete allocataire with payments");
     }
 
-    allocataireMapper.deleteById(id);
+    allocataireMapper.deleteByAvsNumber(allocataire.getNoAVS().toString());
   }
-
 }
