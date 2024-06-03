@@ -23,4 +23,6 @@ public class Allocataire {
   public NoAVS getNoAVS() {
     return noAVS;
   }
+
+
 }

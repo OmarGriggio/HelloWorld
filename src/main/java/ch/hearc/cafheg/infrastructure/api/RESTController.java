@@ -5,6 +5,7 @@ import static ch.hearc.cafheg.infrastructure.persistance.Database.inTransaction;
 import ch.hearc.cafheg.business.allocations.Allocataire;
 import ch.hearc.cafheg.business.allocations.Allocation;
 import ch.hearc.cafheg.business.allocations.AllocationService;
+import ch.hearc.cafheg.business.allocations.ParentDroitAllocationParams;
 import ch.hearc.cafheg.business.versements.VersementService;
 import ch.hearc.cafheg.infrastructure.pdf.PDFExporter;
 import ch.hearc.cafheg.infrastructure.persistance.AllocataireMapper;
@@ -45,7 +46,7 @@ public class RESTController {
 
   @PostMapping("/droits/quel-parent")
   public String getParentDroitAllocation(@RequestBody Map<String, Object> params) {
-    return inTransaction(() -> allocationService.getParentDroitAllocation(params));
+    return inTransaction(() -> allocationService.getParentDroitAllocation((ParentDroitAllocationParams) params));
   }
 
   @GetMapping("/allocataires")
@@ -79,4 +80,17 @@ public class RESTController {
   public byte[] pdfVersements(@PathVariable("allocataireId") int allocataireId) {
     return inTransaction(() -> versementService.exportPDFVersements(allocataireId));
   }
+
+  @DeleteMapping("/allocataires/{id}")
+  public String deleteAllocataireById(@PathVariable int id) {
+    return inTransaction(() -> allocationService.deleteAllocataireById(id));
+  }
+
+  @PutMapping("/allocataires/{id}")
+  public String updateAllocataireName(@PathVariable int id, @RequestBody Map<String, String> params) {
+    String nom = params.get("nom");
+    String prenom = params.get("prenom");
+    return inTransaction(() -> allocationService.updateAllocataireName(nom, prenom, id));
+  }
+
 }

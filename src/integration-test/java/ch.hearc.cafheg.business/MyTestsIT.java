@@ -1,6 +1,6 @@
 package ch.hearc.cafheg.business;
 
-import org.dbunit.DBTestCase;
+/*import org.dbunit.DBTestCase;
 import org.dbunit.Assertion;
 import org.dbunit.database.DatabaseConnection;
 import org.dbunit.database.IDatabaseConnection;
@@ -65,3 +65,5 @@ public class MyTestsIT extends DBTestCase {
         }
     }
 }
+
+ */

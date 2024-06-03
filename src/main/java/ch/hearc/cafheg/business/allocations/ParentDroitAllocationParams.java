@@ -114,7 +114,7 @@ public class ParentDroitAllocationParams {
         return parent2Salaried;
     }
 
-    public Object getParent2Salaire() {
+    public BigDecimal getParent2Salaire() {
         return parent2Salaire;
     }
 
