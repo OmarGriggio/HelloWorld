@@ -1,6 +1,6 @@
 <Configuration status="WARN">
     <Appenders>
-        <RollingFile name="RollingFileAppender" fileName="/log/logFile.log" filePattern="/log/logFile.%d{yyyy-MM-dd}.log">
+        <RollingFile name="RollingFileAppender" fileName="logs/logFile.log" filePattern="logs/logFile.%d{yyyy-MM-dd}.log">
             <PatternLayout>
                 <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
             </PatternLayout>
@@ -9,12 +9,12 @@
             </Policies>
             <DefaultRolloverStrategy max="30" />
         </RollingFile>
-        
+
         <Console name="ConsoleAppender" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" />
         </Console>
     </Appenders>
-    
+
     <Loggers>
         <Logger name="ch.hearc.ig" level="info" additivity="false">
             <AppenderRef ref="RollingFileAppender"/>
