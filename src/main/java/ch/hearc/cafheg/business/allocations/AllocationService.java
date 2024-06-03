@@ -3,7 +3,9 @@ package ch.hearc.cafheg.business.allocations;
 import ch.hearc.cafheg.infrastructure.persistance.AllocataireMapper;
 import ch.hearc.cafheg.infrastructure.persistance.AllocationMapper;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -11,13 +13,14 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j
 public class AllocationService {
   private static final String PARENT_1 = "Parent1";
   private static final String PARENT_2 = "Parent2";
 
   private final AllocataireMapper allocataireMapper;
   private final AllocationMapper allocationMapper;
+
+  private final Logger log = LoggerFactory.getLogger(AllocationService.class);
 
   public AllocationService(
       AllocataireMapper allocataireMapper,
