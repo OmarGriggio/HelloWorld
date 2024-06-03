@@ -1,8 +1,10 @@
 <configuration>
-    <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/logFile.log</file>
+
+    <!-- Appender for logging errors to err.log -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/err.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/logFile.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>logs/err.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
             <totalSizeCap>3GB</totalSizeCap>
         </rollingPolicy>
@@ -11,21 +13,39 @@
         </encoder>
     </appender>
 
+    <!-- Appender for logging info to cafheg_{date-jour}.log -->
+    <appender name="INFO_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/cafheg.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/cafheg_%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Appender for logging debug to console -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <logger name="ch.hearc.cafheg" level="info" additivity="false">
-        <appender-ref ref="ROLLING" />
+    <!-- Logger for error level in packages containing "ch" -->
+    <logger name="ch" level="error" additivity="false">
+        <appender-ref ref="ERROR_FILE" />
     </logger>
 
-    <logger name="ch.hearc.cafheg" level="warn" additivity="false">
+    <!-- Logger for info level in service packages -->
+    <logger name="your.service.package" level="info" additivity="false">
+        <appender-ref ref="INFO_FILE" />
+    </logger>
+
+    <!-- Logger for debug level in all packages -->
+    <root level="debug">
         <appender-ref ref="CONSOLE" />
-    </logger>
-
-    <root level="info">
-        <appender-ref ref="ROLLING" />
     </root>
+
 </configuration>
