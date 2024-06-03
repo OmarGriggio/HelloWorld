@@ -36,6 +36,92 @@ public class ParentDroitAllocationParams {
         this.parent2Salaried = builder.parent2Salaried;
     }
 
+    public void setParent1ActiviteLucrative(boolean b) {
+    }
+
+    public void setParent2Residence(String bienne) {
+    }
+
+    public void setEnfantResidence(Object o) {
+    }
+
+    public void setParent1Residence(Object o) {
+    }
+
+    public void setParent2ActiviteLucrative(Object o) {
+    }
+
+    public void setParent2Salaire(Object o) {
+    }
+
+    public void setParent1Salaire(BigDecimal bigDecimal) {
+    }
+
+    public void setParent2ParentalAuthority(boolean b) {
+    }
+
+    public void setParentsTogether(boolean b) {
+    }
+
+    public void setParent2WorkInChildCanton(boolean b) {
+    }
+
+    public boolean getParent1ActiviteLucrative() {
+        return parent1ActiviteLucrative;
+    }
+
+    public boolean getParent2ActiviteLucrative() {
+        return parent2ActiviteLucrative;
+    }
+
+    public boolean isParent1ParentalAuthority() {
+        return parent1ParentalAuthority;
+    }
+
+    public boolean isParent2ParentalAuthority() {
+        return parent2ParentalAuthority;
+    }
+
+    public boolean isParentsTogether() {
+        return parentsTogether;
+    }
+
+    public Object getParent1Residence() {
+        return parent1Residence;
+    }
+
+    public Object getEnfantResidence() {
+        return enfantResidence;
+    }
+
+    public Object getParent2Residence() {
+        return parent2Residence;
+    }
+
+    public boolean isParent1WorkInChildCanton() {
+        return parent1WorkInChildCanton;
+    }
+
+    public boolean isParent2WorkInChildCanton() {
+        return parent2WorkInChildCanton;
+    }
+
+    public boolean isParent1Salaried() {
+        return parent1Salaried;
+    }
+
+    public boolean isParent2Salaried() {
+        return parent2Salaried;
+    }
+
+    public Object getParent2Salaire() {
+        return parent2Salaire;
+    }
+
+    public BigDecimal getParent1Salaire() {
+        return parent1Salaire;
+    }
+
     // Getters
     // (Include all getters here)
 

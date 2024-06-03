@@ -39,7 +39,7 @@ class AllocationServiceTest {
     allocationService = new AllocationService(allocataireMapper, allocationMapper);
 
     // Default params setup
-    params = new ParentDroitAllocationParams.Builder(
+    params = new ParentDroitAllocationParams.Builder()
             .setEnfantResidence("Neuchâtel")
             .setParent1Residence("Neuchâtel")
             .setParent2Residence("Neuchâtel")
@@ -48,6 +48,7 @@ class AllocationServiceTest {
             .setParent1Salaire(BigDecimal.valueOf(2500))
             .setParent2Salaire(BigDecimal.valueOf(3000))
             .build();
+
   }
 
   @Test
