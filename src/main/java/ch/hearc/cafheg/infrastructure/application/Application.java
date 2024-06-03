@@ -2,13 +2,14 @@ package ch.hearc.cafheg.infrastructure.application;
 
 import ch.hearc.cafheg.infrastructure.persistance.Database;
 import ch.hearc.cafheg.infrastructure.persistance.Migrations;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.ComponentScan;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+
 
 @SpringBootApplication
 @ComponentScan(basePackages = "ch.hearc.cafheg")
@@ -25,10 +26,10 @@ public class Application extends SpringBootServletInitializer {
 
   private static void start() {
     Database database = new Database();
-    Migrations migrations = new Migrations(database);
+    Migrations migrations = new Migrations(database, false);
 
     database.start();
-    migrations.start("classpath:db");
+    migrations.start();
   }
 
   /**

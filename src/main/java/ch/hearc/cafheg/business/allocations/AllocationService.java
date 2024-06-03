@@ -2,12 +2,10 @@ package ch.hearc.cafheg.business.allocations;
 
 import ch.hearc.cafheg.infrastructure.persistance.AllocataireMapper;
 import ch.hearc.cafheg.infrastructure.persistance.AllocationMapper;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-
 
 public class AllocationService {
   static final String PARENT_1 = "Parent1";
@@ -88,8 +86,8 @@ public class AllocationService {
     throw new IllegalArgumentException("Invalid parameters for determining right allocation parent.");
   }
 
-  public void updateAllocataire(long id, String newNom, String newPrenom) {
-    Allocataire existingAllocataire = allocataireMapper.findById(id);
+  public void updateAllocataire(String avsNumber, String newNom, String newPrenom) {
+    Allocataire existingAllocataire = allocataireMapper.findByAvsNumber(avsNumber);
     if (existingAllocataire == null) {
       throw new IllegalArgumentException("Allocataire not found");
     }
@@ -105,9 +103,8 @@ public class AllocationService {
     }
   }
 
-
-  public void deleteAllocataire(long id) {
-    Allocataire allocataire = allocataireMapper.findById(id);
+  public void deleteAllocataire(String avsNumber) {
+    Allocataire allocataire = allocataireMapper.findByAvsNumber(avsNumber);
     if (allocataire == null) {
       throw new IllegalArgumentException("Allocataire not found");
     }

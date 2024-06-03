@@ -106,14 +106,13 @@ public class RESTController {
     });
   }
 
-
   @PutMapping("/{id}")
   public void updateAllocataire(@PathVariable("id") long id, @RequestBody Map<String, String> params) {
     String newNom = params.get("nom");
     String newPrenom = params.get("prenom");
     log.info("Received request to update allocataire with id: {}. New nom: {}, new prenom: {}", id, newNom, newPrenom);
     inTransaction(() -> {
-      allocationService.updateAllocataire(id, newNom, newPrenom);
+      allocationService.updateAllocataire(String.valueOf(id), newNom, newPrenom);
       log.info("Updated allocataire with id: {}", id);
       return null;
     });
@@ -123,7 +122,7 @@ public class RESTController {
   public void deleteAllocataire(@PathVariable("id") long id) {
     log.info("Received request to delete allocataire with id: {}", id);
     inTransaction(() -> {
-      allocationService.deleteAllocataire(id);
+      allocationService.deleteAllocataire(String.valueOf(id));
       log.info("Deleted allocataire with id: {}", id);
       return null;
     });

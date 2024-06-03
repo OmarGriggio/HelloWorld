@@ -4,31 +4,32 @@ import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Gestion des scripts de migration sur la base de données.
- */
 public class Migrations {
 
   private static final Logger logger = LoggerFactory.getLogger(Migrations.class);
 
   private final Database database;
+  private final boolean isTestEnv;
 
-  public Migrations(Database database) {
+  public Migrations(Database database, boolean isTestEnv) {
     this.database = database;
+    this.isTestEnv = isTestEnv;
   }
 
-  /**
-   * Exécution des migrations
-   */
-  public void start(String location) {
-    logger.info("Starting migrations from location: {}", location);
+  public void start() {
+    logger.debug("Doing migrations");
+    String location = "classpath:db/ddl";
 
     Flyway flyway = Flyway.configure()
-        .dataSource(database.dataSource())
-        .locations(location)
-        .load();
+            .dataSource(database.dataSource())
+            .locations(location)
+            .load();
 
     flyway.migrate();
-    logger.info("Migrations completed successfully");
+    logger.info("Migrations done");
+
+    if (isTestEnv) {
+      logger.debug("Test environment detected, DDL migrations done");
+    }
   }
 }
