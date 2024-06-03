@@ -1,11 +1,15 @@
 package ch.hearc.cafheg.infrastructure.persistance;
 
 import org.flywaydb.core.Flyway;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Gestion des scripts de migration sur la base de données.
  */
 public class Migrations {
+
+  private static final Logger logger = LoggerFactory.getLogger(Migrations.class);
 
   private final Database database;
 
@@ -17,14 +21,14 @@ public class Migrations {
    * Exécution des migrations
    */
   public void start(String location) {
-    System.out.println("Doing migrations");
+    logger.info("Starting migrations from location: {}", location);
 
     Flyway flyway = Flyway.configure()
-            .dataSource(database.dataSource())
-            .locations(location)
-            .load();
+        .dataSource(database.dataSource())
+        .locations(location)
+        .load();
 
     flyway.migrate();
-    System.out.println("Migrations done");
+    logger.info("Migrations completed successfully");
   }
 }

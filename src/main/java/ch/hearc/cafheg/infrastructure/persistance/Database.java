@@ -2,6 +2,9 @@ package ch.hearc.cafheg.infrastructure.persistance;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.function.Supplier;
@@ -14,13 +17,16 @@ public class Database {
   /** Connection JDBC active par utilisateur/thread (ThreadLocal) */
   private static final ThreadLocal<Connection> connection = new ThreadLocal<>();
 
+  private static final Logger logger = LoggerFactory.getLogger(Database.class);
+
   /**
    * Retourne la transaction active ou throw une Exception si pas de transaction
    * active.
+   * 
    * @return Connection JDBC active
    */
   static Connection activeJDBCConnection() {
-    if(connection.get() == null) {
+    if (connection.get() == null) {
       throw new RuntimeException("Pas de connection JDBC active");
     }
     return connection.get();
@@ -28,26 +34,29 @@ public class Database {
 
   /**
    * Exécution d'une fonction dans une transaction.
+   * 
    * @param inTransaction La fonction a éxécuter au travers d'une transaction
-   * @param <T> Le type du retour de la fonction
+   * @param <T>           Le type du retour de la fonction
    * @return Le résultat de l'éxécution de la fonction
    */
   public static <T> T inTransaction(Supplier<T> inTransaction) {
-    System.out.println("inTransaction#start");
+    logger.debug("inTransaction#start");
     try {
-      System.out.println("inTransaction#getConnection");
+      logger.debug("inTransaction#getConnection");
       connection.set(dataSource.getConnection());
       return inTransaction.get();
     } catch (Exception e) {
+      logger.error("Erreur lors de l'exécution de la transaction", e);
       throw new RuntimeException(e);
     } finally {
       try {
-        System.out.println("inTransaction#closeConnection");
+        logger.debug("inTransaction#closeConnection");
         connection.get().close();
       } catch (SQLException e) {
+        logger.error("Erreur lors de la fermeture de la connection", e);
         throw new RuntimeException(e);
       }
-      System.out.println("inTransaction#end");
+      logger.debug("inTransaction#end");
       connection.remove();
     }
   }
@@ -60,12 +69,12 @@ public class Database {
    * Initialisation du pool de connections.
    */
   public void start() {
-    System.out.println("Initializing datasource");
+    logger.info("Initializing datasource");
     HikariConfig config = new HikariConfig();
     config.setJdbcUrl("jdbc:h2:mem:sample");
     config.setMaximumPoolSize(20);
     config.setDriverClassName("org.h2.Driver");
     dataSource = new HikariDataSource(config);
-    System.out.println("Datasource initialized");
+    logger.info("Datasource initialized");
   }
 }
