@@ -15,8 +15,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/allocations")
 public class AllocationService {
-  private static final String PARENT_1 = "Parent1";
-  private static final String PARENT_2 = "Parent2";
+  static final String PARENT_1 = "Parent1";
+  static final String PARENT_2 = "Parent2";
 
   private final AllocataireMapper allocataireMapper;
   private final AllocationMapper allocationMapper;
@@ -40,13 +40,57 @@ public class AllocationService {
   }
 
   public String getParentDroitAllocation(ParentDroitAllocationParams params) {
-    System.out.println("Déterminer quel parent a le droit aux allocations");
+    log.info("Déterminer quel parent a le droit aux allocations");
+
+    // Branch a: One parent with activité lucrative
     if (params.getParent1ActiviteLucrative() && !params.getParent2ActiviteLucrative()) {
       return PARENT_1;
     }
     if (params.getParent2ActiviteLucrative() && !params.getParent1ActiviteLucrative()) {
       return PARENT_2;
     }
-    return params.getParent1Salaire().compareTo(params.getParent2Salaire()) > 0 ? PARENT_1 : PARENT_2;
+
+    // Both parents have activité lucrative
+    if (params.getParent1ActiviteLucrative() && params.getParent2ActiviteLucrative()) {
+      // Branch b: Parental authority
+      if (params.isParent1ParentalAuthority() && !params.isParent2ParentalAuthority()) {
+        return PARENT_1;
+      }
+      if (!params.isParent1ParentalAuthority() && params.isParent2ParentalAuthority()) {
+        return PARENT_2;
+      }
+
+      // Branch c: Parents live separately
+      if (!params.isParentsTogether()) {
+        if (params.getParent1Residence().equals(params.getEnfantResidence())) {
+          return PARENT_1;
+        }
+        if (params.getParent2Residence().equals(params.getEnfantResidence())) {
+          return PARENT_2;
+        }
+      }
+
+      // Branch d: Parents live together, one parent works in child's canton
+      if (params.isParentsTogether()) {
+        if (params.isParent1WorkInChildCanton() && !params.isParent2WorkInChildCanton()) {
+          return PARENT_1;
+        }
+        if (params.isParent2WorkInChildCanton() && !params.isParent1WorkInChildCanton()) {
+          return PARENT_2;
+        }
+
+        // Branch e: Parents live together, both salaried or one salaried, one independent
+        if (params.isParent1Salaried() || params.isParent2Salaried()) {
+          return params.getParent1Salaire().compareTo(params.getParent2Salaire()) > 0 ? PARENT_1 : PARENT_2;
+        }
+
+        // Branch f: Parents live together, both independent
+        if (!params.isParent1Salaried() && !params.isParent2Salaried()) {
+          return params.getParent1Salaire().compareTo(params.getParent2Salaire()) > 0 ? PARENT_1 : PARENT_2;
+        }
+      }
+    }
+
+    throw new IllegalArgumentException("Invalid parameters for determining right allocation parent.");
   }
 }

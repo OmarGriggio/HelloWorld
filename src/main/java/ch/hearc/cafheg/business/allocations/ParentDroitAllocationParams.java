@@ -3,7 +3,6 @@ package ch.hearc.cafheg.business.allocations;
 import java.math.BigDecimal;
 
 public class ParentDroitAllocationParams {
-
     private String enfantResidence;
     private String parent1Residence;
     private String parent2Residence;
@@ -11,82 +10,124 @@ public class ParentDroitAllocationParams {
     private boolean parent2ActiviteLucrative;
     private BigDecimal parent1Salaire;
     private BigDecimal parent2Salaire;
+    private boolean parent1ParentalAuthority;
+    private boolean parent2ParentalAuthority;
+    private boolean parentsTogether;
+    private boolean parent1WorkInChildCanton;
+    private boolean parent2WorkInChildCanton;
+    private boolean parent1Salaried;
+    private boolean parent2Salaried;
 
-    public ParentDroitAllocationParams() {
+    // Private constructor
+    private ParentDroitAllocationParams(Builder builder) {
+        this.enfantResidence = builder.enfantResidence;
+        this.parent1Residence = builder.parent1Residence;
+        this.parent2Residence = builder.parent2Residence;
+        this.parent1ActiviteLucrative = builder.parent1ActiviteLucrative;
+        this.parent2ActiviteLucrative = builder.parent2ActiviteLucrative;
+        this.parent1Salaire = builder.parent1Salaire;
+        this.parent2Salaire = builder.parent2Salaire;
+        this.parent1ParentalAuthority = builder.parent1ParentalAuthority;
+        this.parent2ParentalAuthority = builder.parent2ParentalAuthority;
+        this.parentsTogether = builder.parentsTogether;
+        this.parent1WorkInChildCanton = builder.parent1WorkInChildCanton;
+        this.parent2WorkInChildCanton = builder.parent2WorkInChildCanton;
+        this.parent1Salaried = builder.parent1Salaried;
+        this.parent2Salaried = builder.parent2Salaried;
     }
 
-    public ParentDroitAllocationParams(String enfantResidence, String parent1Residence, String parent2Residence, boolean parent1ActiviteLucrative, boolean parent2ActiviteLucrative, BigDecimal parent1Salaire, BigDecimal parent2Salaire) {
-        this.enfantResidence = enfantResidence;
-        this.parent1Residence = parent1Residence;
-        this.parent2Residence = parent2Residence;
-        this.parent1ActiviteLucrative = parent1ActiviteLucrative;
-        this.parent2ActiviteLucrative = parent2ActiviteLucrative;
-        this.parent1Salaire = parent1Salaire;
-        this.parent2Salaire = parent2Salaire;
-    }
+    // Getters
+    // (Include all getters here)
 
-    // Getters and Setters
-    public String getEnfantResidence() {
-        return enfantResidence;
-    }
+    // Builder class
+    public static class Builder {
+        private String enfantResidence;
+        private String parent1Residence;
+        private String parent2Residence;
+        private boolean parent1ActiviteLucrative;
+        private boolean parent2ActiviteLucrative;
+        private BigDecimal parent1Salaire;
+        private BigDecimal parent2Salaire;
+        private boolean parent1ParentalAuthority;
+        private boolean parent2ParentalAuthority;
+        private boolean parentsTogether;
+        private boolean parent1WorkInChildCanton;
+        private boolean parent2WorkInChildCanton;
+        private boolean parent1Salaried;
+        private boolean parent2Salaried;
 
-    public void setEnfantResidence(String enfantResidence) {
-        this.enfantResidence = enfantResidence;
-    }
+        public Builder setEnfantResidence(String enfantResidence) {
+            this.enfantResidence = enfantResidence;
+            return this;
+        }
 
-    public String getParent1Residence() {
-        return parent1Residence;
-    }
+        public Builder setParent1Residence(String parent1Residence) {
+            this.parent1Residence = parent1Residence;
+            return this;
+        }
 
-    public void setParent1Residence(String parent1Residence) {
-        this.parent1Residence = parent1Residence;
-    }
+        public Builder setParent2Residence(String parent2Residence) {
+            this.parent2Residence = parent2Residence;
+            return this;
+        }
 
-    public String getParent2Residence() {
-        return parent2Residence;
-    }
+        public Builder setParent1ActiviteLucrative(boolean parent1ActiviteLucrative) {
+            this.parent1ActiviteLucrative = parent1ActiviteLucrative;
+            return this;
+        }
 
-    public void setParent2Residence(String parent2Residence) {
-        this.parent2Residence = parent2Residence;
-    }
+        public Builder setParent2ActiviteLucrative(boolean parent2ActiviteLucrative) {
+            this.parent2ActiviteLucrative = parent2ActiviteLucrative;
+            return this;
+        }
 
-    public boolean isParent1ActiviteLucrative() {
-        return parent1ActiviteLucrative;
-    }
+        public Builder setParent1Salaire(BigDecimal parent1Salaire) {
+            this.parent1Salaire = parent1Salaire;
+            return this;
+        }
 
-    public void setParent1ActiviteLucrative(boolean parent1ActiviteLucrative) {
-        this.parent1ActiviteLucrative = parent1ActiviteLucrative;
-    }
+        public Builder setParent2Salaire(BigDecimal parent2Salaire) {
+            this.parent2Salaire = parent2Salaire;
+            return this;
+        }
 
-    public boolean isParent2ActiviteLucrative() {
-        return parent2ActiviteLucrative;
-    }
+        public Builder setParent1ParentalAuthority(boolean parent1ParentalAuthority) {
+            this.parent1ParentalAuthority = parent1ParentalAuthority;
+            return this;
+        }
 
-    public void setParent2ActiviteLucrative(Boolean parent2ActiviteLucrative) {
-        this.parent2ActiviteLucrative = parent2ActiviteLucrative;
-    }
+        public Builder setParent2ParentalAuthority(boolean parent2ParentalAuthority) {
+            this.parent2ParentalAuthority = parent2ParentalAuthority;
+            return this;
+        }
 
-    public BigDecimal getParent1Salaire() {
-        return parent1Salaire;
-    }
+        public Builder setParentsTogether(boolean parentsTogether) {
+            this.parentsTogether = parentsTogether;
+            return this;
+        }
 
-    public void setParent1Salaire(BigDecimal parent1Salaire) {
-        this.parent1Salaire = parent1Salaire;
-    }
+        public Builder setParent1WorkInChildCanton(boolean parent1WorkInChildCanton) {
+            this.parent1WorkInChildCanton = parent1WorkInChildCanton;
+            return this;
+        }
 
-    public BigDecimal getParent2Salaire() {
-        return parent2Salaire;
-    }
+        public Builder setParent2WorkInChildCanton(boolean parent2WorkInChildCanton) {
+            this.parent2WorkInChildCanton = parent2WorkInChildCanton;
+            return this;
+        }
 
-    public void setParent2Salaire(BigDecimal parent2Salaire) {
-        this.parent2Salaire = parent2Salaire;
-    }
+        public Builder setParent1Salaried(boolean parent1Salaried) {
+            this.parent1Salaried = parent1Salaried;
+            return this;
+        }
 
-    public boolean getParent1ActiviteLucrative() {
-        return parent1ActiviteLucrative;
-    }
+        public Builder setParent2Salaried(boolean parent2Salaried) {
+            this.parent2Salaried = parent2Salaried;
+            return this;
+        }
 
-    public boolean getParent2ActiviteLucrative() {
-        return parent2ActiviteLucrative;
+        public ParentDroitAllocationParams build() {
+            return new ParentDroitAllocationParams(this);
+        }
     }
 }
