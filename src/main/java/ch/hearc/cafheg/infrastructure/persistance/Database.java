@@ -11,63 +11,45 @@ import java.sql.SQLException;
 import java.util.function.Supplier;
 
 public class Database {
-  /** Pool de connections JDBC */
   private static DataSource dataSource;
-
   static Logger logger = LoggerFactory.getLogger(Database.class);
-
-  /** Connection JDBC active par utilisateur/thread (ThreadLocal) */
   private static final ThreadLocal<Connection> connection = new ThreadLocal<>();
 
-  /**
-   * Retourne la transaction active ou throw une Exception si pas de transaction
-   * active.
-   * @return Connection JDBC active
-   */
   public static Connection activeJDBCConnection() {
-    if(connection.get() == null) {
-      RuntimeException e = new RuntimeException("Pas de connection JDBC active");
-      logger.error("Pas de connection JDBC active", e);
+    Connection conn = connection.get();
+    if (conn == null) {
+      RuntimeException e = new RuntimeException("No active JDBC connection");
+      logger.error("No active JDBC connection", e);
       throw e;
     }
-    return connection.get();
+    try {
+      if (conn.isClosed()) {
+        logger.error("Connection is closed");
+        throw new RuntimeException("Connection is closed");
+      }
+    } catch (SQLException e) {
+      logger.error("Error checking connection status", e);
+      throw new RuntimeException(e);
+    }
+    return conn;
   }
 
-  /**
-   * Exécution d'une fonction dans une transaction.
-   * @param inTransaction La fonction a éxécuter au travers d'une transaction
-   * @param <T> Le type du retour de la fonction
-   * @return Le résultat de l'éxécution de la fonction
-   */
   public static <T> T inTransaction(Supplier<T> inTransaction) {
     logger.debug("Transaction start");
     try {
-      logger.debug("Transaction : getConnection");
-      connection.set(dataSource.getConnection());
+      if (connection.get() == null || connection.get().isClosed()) {
+        logger.debug("Transaction: getConnection");
+        connection.set(dataSource.getConnection());
+      }
       return inTransaction.get();
     } catch (Exception e) {
       logger.error("Transaction error when getting connection", e);
       throw new RuntimeException(e);
     } finally {
-      try {
-        logger.debug("Transaction, close connection");
-        connection.get().close();
-      } catch (SQLException e) {
-        logger.error("Transaction error when closing connection", e);
-        throw new RuntimeException(e);
-      }
       logger.debug("Transaction end");
-      connection.remove();
     }
   }
 
-  DataSource dataSource() {
-    return dataSource;
-  }
-
-  /**
-   * Initialisation du pool de connections.
-   */
   public void start() {
     logger.info("Initializing datasource");
     HikariConfig config = new HikariConfig();
@@ -82,5 +64,20 @@ public class Database {
       throw new RuntimeException(e);
     }
     logger.info("Datasource initialized");
+  }
+
+  public void stop() {
+    try {
+      if (connection.get() != null && !connection.get().isClosed()) {
+        connection.get().close();
+        connection.remove();
+      }
+    } catch (SQLException e) {
+      logger.error("Error stopping the database", e);
+    }
+  }
+
+  DataSource dataSource() {
+    return dataSource;
   }
 }

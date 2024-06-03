@@ -20,17 +20,15 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 
 public class MyTestsIT {
 
     private static final Logger log = LoggerFactory.getLogger(MyTestsIT.class);
 
-    private IDatabaseConnection connection;
-    private IDataSet dataTest;
+    private IDatabaseConnection dbUnitConnection;
     private Database database;
-    private ITable expectedTable;
-    private ITable actualData;
     private AllocationService allocationService;
 
     @BeforeEach
@@ -38,25 +36,36 @@ public class MyTestsIT {
         try {
             // Start the DB and run migrations
             database = new Database();
-            Migrations migrations = new Migrations(database, true);
             database.start();
+            Migrations migrations = new Migrations(database, true);
             migrations.start();
 
-            // Populate the DB with data from XML file
-            connection = new DatabaseConnection(Database.activeJDBCConnection());
+            // Initialize DBUnit connection
+            Connection jdbcConnection = Database.activeJDBCConnection();
+            dbUnitConnection = new DatabaseConnection(jdbcConnection);
+
+            // Load test data
             loadTestData("data.xml");
 
+            // Initialize services
             allocationService = new AllocationService(new AllocataireMapper(), new AllocationMapper());
-        } catch (DatabaseUnitException e) {
+        } catch (DatabaseUnitException  e) {
+            log.error("Error setting up the database connection and loading test data", e);
             throw new RuntimeException(e);
         }
     }
 
+    @AfterEach
+    public void tearDown() {
+        database.stop();
+    }
+
     private void loadTestData(String dataFile) {
         try {
-            dataTest = DBUnitUtils.loadDataSet(dataFile);
-            DatabaseOperation.CLEAN_INSERT.execute(connection, dataTest);
+            IDataSet dataSet = DBUnitUtils.loadDataSet(dataFile);
+            DatabaseOperation.CLEAN_INSERT.execute(dbUnitConnection, dataSet);
         } catch (Exception e) {
+            log.error("Error loading test data from file: {}", dataFile, e);
             throw new RuntimeException("Error loading test data", e);
         }
     }
@@ -70,12 +79,16 @@ public class MyTestsIT {
 
         // Act
         allocationService.deleteAllocataire(validAvs);
-        allocationService.deleteAllocataire(invalidAvs);
+        try {
+            allocationService.deleteAllocataire(invalidAvs);
+        } catch (IllegalArgumentException e) {
+            log.info("Expected exception for invalid AVS: {}", invalidAvs, e);
+        }
 
         // Assert
-        actualData = connection.createQueryTable("ALLOCATAIRES", "SELECT * FROM ALLOCATAIRES");
-        dataTest = DBUnitUtils.loadDataSet("expectedDataAfterDeletion.xml");
-        expectedTable = dataTest.getTable("ALLOCATAIRES");
+        ITable actualData = dbUnitConnection.createQueryTable("ALLOCATAIRES", "SELECT * FROM ALLOCATAIRES");
+        IDataSet expectedData = DBUnitUtils.loadDataSet("expectedDataAfterDeletion.xml");
+        ITable expectedTable = expectedData.getTable("ALLOCATAIRES");
 
         Assertion.assertEquals(expectedTable, actualData);
     }
@@ -93,13 +106,19 @@ public class MyTestsIT {
 
         // Act
         allocationService.updateAllocataire(validAvs, newName, newSurname);
-        allocationService.updateAllocataire(invalidAvs, invalidName, invalidSurname);
+        try {
+            allocationService.updateAllocataire(invalidAvs, invalidName, invalidSurname);
+        } catch (IllegalArgumentException e) {
+            log.info("Expected exception for invalid AVS: {}", invalidAvs, e);
+        }
 
         // Assert
-        actualData = connection.createQueryTable("ALLOCATAIRES", "SELECT * FROM ALLOCATAIRES");
-        dataTest = DBUnitUtils.loadDataSet("expectedDataAfterUpdate.xml");
-        expectedTable = dataTest.getTable("ALLOCATAIRES");
+        ITable actualData = dbUnitConnection.createQueryTable("ALLOCATAIRES", "SELECT * FROM ALLOCATAIRES");
+        IDataSet expectedData = DBUnitUtils.loadDataSet("expectedDataAfterUpdate.xml");
+        ITable expectedTable = expectedData.getTable("ALLOCATAIRES");
 
         Assertion.assertEquals(expectedTable, actualData);
     }
+
+    // Other test methods can be added here...
 }

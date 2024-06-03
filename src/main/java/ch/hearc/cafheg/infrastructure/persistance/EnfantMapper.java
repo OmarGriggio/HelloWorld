@@ -16,7 +16,7 @@ public class EnfantMapper extends Mapper {
 
   private final String QUERY_FIND_ENFANT_BY_ID = "SELECT NO_AVS, NOM, PRENOM FROM ENFANTS WHERE NUMERO=?";
 
-  public Enfant findById(long id) {
+  public Enfant findById(long id) throws SQLException {
     logger.info("Recherche d'un enfant par son id {}", id);
     Connection connection = activeJDBCConnection();
     try {

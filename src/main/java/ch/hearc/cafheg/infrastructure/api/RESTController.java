@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -60,8 +61,13 @@ public class RESTController {
   public List<Allocation> allocations() {
     log.info("Received request to get all allocations");
     return inTransaction(() -> {
-      List<Allocation> result = allocationService.findAllocationsActuelles();
-      log.info("Found {} allocations", result.size());
+        List<Allocation> result = null;
+        try {
+            result = allocationService.findAllocationsActuelles();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        log.info("Found {} allocations", result.size());
       return result;
     });
   }

@@ -10,6 +10,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static ch.hearc.cafheg.infrastructure.persistance.Database.logger;
+
 public class AllocataireMapper extends Mapper {
 
   private static final String QUERY_FIND_ALL = "SELECT NOM, PRENOM, NO_AVS FROM ALLOCATAIRES";
@@ -80,12 +82,16 @@ public class AllocataireMapper extends Mapper {
   }
 
   public boolean hasPayments(String avsNumber) {
-    try (Connection connection = activeJDBCConnection();
-         PreparedStatement preparedStatement = connection.prepareStatement(QUERY_SELECT_ALL_VERSEMENTS_WHERE_NUMERO)) {
-
-      preparedStatement.setString(1, avsNumber);
-      try (ResultSet resultSet = preparedStatement.executeQuery()) {
-        return resultSet.next();
+    try (Connection connection = activeJDBCConnection()) {
+      if (connection.isClosed()) {
+        logger.error("Connection is closed before query execution");
+        throw new SQLException("Connection is closed");
+      }
+      try (PreparedStatement preparedStatement = connection.prepareStatement(QUERY_SELECT_ALL_VERSEMENTS_WHERE_NUMERO)) {
+        preparedStatement.setString(1, avsNumber);
+        try (ResultSet resultSet = preparedStatement.executeQuery()) {
+          return resultSet.next();
+        }
       }
     } catch (SQLException e) {
       throw new RuntimeException("Error checking for payments", e);

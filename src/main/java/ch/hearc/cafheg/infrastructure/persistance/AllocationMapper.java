@@ -19,7 +19,7 @@ public class AllocationMapper extends Mapper {
 
   private static final String QUERY_FIND_ALL = "SELECT * FROM ALLOCATIONS";
 
-  public List<Allocation> findAll() {
+  public List<Allocation> findAll() throws SQLException {
     logger.info("Recherche de toutes les allocations");
 
     Connection connection = activeJDBCConnection();

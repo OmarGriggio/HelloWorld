@@ -6,6 +6,7 @@ import ch.hearc.cafheg.business.common.Montant;
 import ch.hearc.cafheg.infrastructure.persistance.EnfantMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.Map;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -122,6 +123,8 @@ public class PDFExporter {
     } catch (
         IOException e) {
       throw new RuntimeException(e);
+    } catch (SQLException e) {
+        throw new RuntimeException(e);
     }
   }
 }
