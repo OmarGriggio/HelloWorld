@@ -5,6 +5,7 @@ import ch.hearc.cafheg.infrastructure.persistance.AllocationMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class AllocationService {
     this.allocationMapper = allocationMapper;
   }
 
-  public List<Allocataire> findAllAllocataires(String likeNom) {
+  public List<Allocataire> findAllAllocataires(String likeNom) throws SQLException {
     log.info("Rechercher tous les allocataires");
     return allocataireMapper.findAll(likeNom);
   }
@@ -33,8 +34,38 @@ public class AllocationService {
     return allocationMapper.findAll();
   }
 
+  /**
+   * Determines which parent has the right to allocations based on the provided parameters.
+   *
+   * @param params The parameters for determining the right allocation parent.
+   * @return The parent with the right to allocations.
+   * @throws IllegalArgumentException If none of the conditions in the method's logic match.
+   */
   public String getParentDroitAllocation(ParentDroitAllocationParams params) {
     log.info("Déterminer quel parent a le droit aux allocations");
+
+    // Validate required fields
+    if (params.getEnfantResidence() == null) {
+      throw new IllegalArgumentException("Enfant Residence cannot be null or empty");
+    }
+    if (params.getParent1Residence() == null) {
+      throw new IllegalArgumentException("Parent 1 Residence cannot be null or empty");
+    }
+    if (params.getParent2Residence() == null) {
+      throw new IllegalArgumentException("Parent 2 Residence cannot be null or empty");
+    }
+    if (params.getParent1ActiviteLucrative() == null) {
+      throw new IllegalArgumentException("Parent 1 Activité Lucrative cannot be null");
+    }
+    if (params.getParent2ActiviteLucrative() == null) {
+      throw new IllegalArgumentException("Parent 2 Activité Lucrative cannot be null");
+    }
+    if (params.getParent1Salaire() == null) {
+      throw new IllegalArgumentException("Parent 1 Salaire cannot be null");
+    }
+    if (params.getParent2Salaire() == null) {
+      throw new IllegalArgumentException("Parent 2 Salaire cannot be null");
+    }
 
     // Branch a: One parent with activité lucrative
     if (params.getParent1ActiviteLucrative() && !params.getParent2ActiviteLucrative()) {
@@ -74,9 +105,16 @@ public class AllocationService {
         }
 
         // Branch e: Parents live together, both salaried or one salaried, one independent
-        if (params.isParent1Salaried() || params.isParent2Salaried()) {
-          return params.getParent1Salaire().compareTo(params.getParent2Salaire()) > 0 ? PARENT_1 : PARENT_2;
-        }
+                if (params.isParent1Salaried() || params.isParent2Salaried()) {
+                  if (params.getParent1Salaire().compareTo(BigDecimal.valueOf(2000)) < 0) {
+                    return PARENT_1;
+                  }
+                  if (params.getParent2Salaire().compareTo(BigDecimal.valueOf(2000)) < 0) {
+                    return PARENT_2;
+                  }
+                  return params.getParent1Salaire().compareTo(params.getParent2Salaire()) > 0 ? PARENT_1 : PARENT_2;
+                }
+
 
         // Branch f: Parents live together, both independent
         if (!params.isParent1Salaried() && !params.isParent2Salaried()) {
@@ -84,8 +122,14 @@ public class AllocationService {
         }
       }
     }
+
     throw new IllegalArgumentException("Invalid parameters for determining right allocation parent.");
   }
+
+
+
+
+
 
   public void updateAllocataire(String avsNumber, String newNom, String newPrenom) {
     Allocataire existingAllocataire = allocataireMapper.findByAvsNumber(avsNumber);

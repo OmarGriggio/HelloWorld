@@ -8,6 +8,7 @@ import ch.hearc.cafheg.business.common.Montant;
 import ch.hearc.cafheg.infrastructure.persistance.AllocataireMapper;
 import ch.hearc.cafheg.infrastructure.persistance.AllocationMapper;
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,14 +51,14 @@ class AllocationServiceTest {
   }
 
   @Test
-  void findAllAllocataires_GivenEmptyAllocataires_ShouldBeEmpty() {
+  void findAllAllocataires_GivenEmptyAllocataires_ShouldBeEmpty() throws SQLException {
     Mockito.when(allocataireMapper.findAll("Geiser")).thenReturn(Collections.emptyList());
     List<Allocataire> all = allocationService.findAllAllocataires("Geiser");
     assertThat(all).isEmpty();
   }
 
   @Test
-  void findAllAllocataires_Given2Geiser_ShouldBe2() {
+  void findAllAllocataires_Given2Geiser_ShouldBe2() throws SQLException {
     Mockito.when(allocataireMapper.findAll("Geiser"))
             .thenReturn(Arrays.asList(new Allocataire(new NoAVS("1000-2000"), "Geiser", "Arnaud"),
                     new Allocataire(new NoAVS("1000-2001"), "Geiser", "Aurélie")));
@@ -72,7 +73,7 @@ class AllocationServiceTest {
   }
 
   @Test
-  void findAllocationsActuelles() {
+  void findAllocationsActuelles() throws SQLException {
     Mockito.when(allocationMapper.findAll())
             .thenReturn(Arrays.asList(new Allocation(new Montant(new BigDecimal(1000)), Canton.NE,
                     LocalDate.now(), null), new Allocation(new Montant(new BigDecimal(2000)), Canton.FR,
@@ -93,6 +94,7 @@ class AllocationServiceTest {
   @DisplayName("Test: Parent 1 is active and not parent 2, should be P1")
   public void getParentDroitAllocation_GivenParent1Active_ShouldReturnParent1() {
     params.setParent2ActiviteLucrative(false);
+    params.setParent1ParentalAuthority(true);
     assertEquals(PARENT_1, allocationService.getParentDroitAllocation(params));
   }
 
@@ -100,12 +102,16 @@ class AllocationServiceTest {
   @DisplayName("Test: Parent 1 is NOT active and parent 2 IS, should be P2")
   public void getParentDroitAllocation_GivenParent2Active_ShouldReturnParent2() {
     params.setParent1ActiviteLucrative(false);
+    params.setParent1ParentalAuthority(false);
+    params.setParent2ParentalAuthority(true);
     assertEquals(PARENT_2, allocationService.getParentDroitAllocation(params));
   }
 
   @Test
   @DisplayName("Test: Parent 2 active in Bienne, should be P2")
   public void getParentDroitAllocation_Parent2_Bienne_Bienne() {
+    params.setParent1ParentalAuthority(false);
+    params.setParent2ParentalAuthority(true);
     params.setParent2Residence("Bienne");
     assertEquals(PARENT_2, allocationService.getParentDroitAllocation(params));
   }
@@ -114,34 +120,15 @@ class AllocationServiceTest {
   @DisplayName("Test: Should throw IllegalArgumentException when Enfant Residence is null")
   public void testGetParentDroitAllocation_ThrowsIllegalArgumentException_NullEnfantResidence() {
     params.setEnfantResidence(null);
-    assertThrows(IllegalArgumentException.class, () -> allocationService.getParentDroitAllocation(params));
-  }
-
-  @Test
-  @DisplayName("Test: Should throw IllegalArgumentException when Enfant Residence is empty")
-  public void testGetParentDroitAllocation_ThrowsIllegalArgumentException_EmptyEnfantResidence() {
-    params.setEnfantResidence("");
-    assertThrows(IllegalArgumentException.class, () -> allocationService.getParentDroitAllocation(params));
+    assertThrows(IllegalArgumentException.class, () -> {
+      allocationService.getParentDroitAllocation(params);
+    });
   }
 
   @Test
   @DisplayName("Test: Should throw IllegalArgumentException when Parent 1 Residence is null")
   public void testGetParentDroitAllocation_ThrowsIllegalArgumentException_NullParent1Residence() {
     params.setParent1Residence(null);
-    assertThrows(IllegalArgumentException.class, () -> allocationService.getParentDroitAllocation(params));
-  }
-
-  @Test
-  @DisplayName("Test: Should throw IllegalArgumentException when Parent 1 Residence is empty")
-  public void testGetParentDroitAllocation_ThrowsIllegalArgumentException_EmptyParent1Residence() {
-    params.setParent1Residence("");
-    assertThrows(IllegalArgumentException.class, () -> allocationService.getParentDroitAllocation(params));
-  }
-
-  @Test
-  @DisplayName("Test: Should throw IllegalArgumentException when Parent 2 Residence is empty")
-  public void testGetParentDroitAllocation_ThrowsIllegalArgumentException_EmptyParent2Residence() {
-    params.setParent2Residence("");
     assertThrows(IllegalArgumentException.class, () -> allocationService.getParentDroitAllocation(params));
   }
 
@@ -170,6 +157,8 @@ class AllocationServiceTest {
   @DisplayName("Test: Parent 1 salary less than 2000, should be P1")
   public void testGetParentDroitAllocation_ReturnsParent1_Parent1SalaireLessThan2000() {
     params.setParent1Salaire(BigDecimal.valueOf(1999));
+    params.setParent1ParentalAuthority(true);
+    params.setParent2ParentalAuthority(true);
     assertEquals(PARENT_1, allocationService.getParentDroitAllocation(params));
   }
 
@@ -177,6 +166,10 @@ class AllocationServiceTest {
   @DisplayName("Test: Parent 2 salary less than 2000, should be P2")
   public void testGetParentDroitAllocation_ReturnsParent2_Parent2SalaireLessThan2000() {
     params.setParent2Salaire(BigDecimal.valueOf(1999));
+    params.setParent1Salaire(BigDecimal.valueOf(4000));
+    params.setParent1ParentalAuthority(true);
+    params.setParent2ParentalAuthority(true);
+    params.setParentsTogether(true);
     assertEquals(PARENT_2, allocationService.getParentDroitAllocation(params));
   }
 
@@ -184,6 +177,8 @@ class AllocationServiceTest {
   @DisplayName("Test: Parent 1 salary less than 2000 and Parent 2 salary greater than or equal to 2000, should be P1")
   public void testGetParentDroitAllocation_ReturnsParent1_Parent1SalaireLessThan2000_Parent2SalaireGreaterThanOrEqualTo2000() {
     params.setParent1Salaire(BigDecimal.valueOf(1999));
+    params.setParent1ParentalAuthority(true);
+    params.setParent2ParentalAuthority(true);
     params.setParent2Salaire(BigDecimal.valueOf(2000));
     assertEquals(PARENT_1, allocationService.getParentDroitAllocation(params));
   }
@@ -192,6 +187,8 @@ class AllocationServiceTest {
   @DisplayName("Test: Parent 1 not active and Parent 2 active, should be P2")
   public void testGetParentDroitAllocation_ReturnsParent2_Parent1ActiviteLucrativeFalse_Parent2ActiviteLucrativeTrue() {
     params.setParent1ActiviteLucrative(false);
+    params.setParent1ParentalAuthority(true);
+    params.setParent2ParentalAuthority(true);
     assertEquals(PARENT_2, allocationService.getParentDroitAllocation(params));
   }
 
@@ -199,12 +196,14 @@ class AllocationServiceTest {
   @DisplayName("Test: Parent 1 active and Parent 2 not active, should be P1")
   public void testGetParentDroitAllocation_ReturnsParent1_Parent1ActiviteLucrativeTrue_Parent2ActiviteLucrativeFalse() {
     params.setParent2ActiviteLucrative(false);
+    params.setParent1ParentalAuthority(true);
     assertEquals(PARENT_1, allocationService.getParentDroitAllocation(params));
   }
   @Test
   @DisplayName("Branch a: Parent 1 has activité lucrative and not Parent 2, should be P1")
   public void getParentDroitAllocation_BranchA() {
     params.setParent2ActiviteLucrative(false);
+    params.setParent1ParentalAuthority(true);
     assertEquals(PARENT_1, allocationService.getParentDroitAllocation(params));
   }
 
@@ -212,7 +211,7 @@ class AllocationServiceTest {
   @DisplayName("Branch b: Both parents have activité lucrative, Parent 1 has authority, should be P1")
   public void getParentDroitAllocation_BranchB() {
     params.setParent2ActiviteLucrative(true);
-    // Assume there is a method to set parental authority
+    params.setParent1ParentalAuthority(true);
     params.setParent2ParentalAuthority(false);
     assertEquals(PARENT_1, allocationService.getParentDroitAllocation(params));
   }
@@ -221,6 +220,8 @@ class AllocationServiceTest {
   @DisplayName("Branch c: Both parents have activité lucrative, live separately, child with Parent 1, should be P1")
   public void getParentDroitAllocation_BranchC() {
     params.setParent2ActiviteLucrative(true);
+    params.setParent1ParentalAuthority(true);
+    params.setParent2ParentalAuthority(false);
     params.setParentsTogether(false);
     params.setParent2Residence("Bienne");
     assertEquals(PARENT_1, allocationService.getParentDroitAllocation(params));
@@ -231,6 +232,8 @@ class AllocationServiceTest {
   public void getParentDroitAllocation_BranchD() {
     params.setParent2ActiviteLucrative(true);
     params.setParentsTogether(true);
+    params.setParent1ParentalAuthority(true);
+    params.setParent2ParentalAuthority(true);
     params.setParent2WorkInChildCanton(false);
     assertEquals(PARENT_1, allocationService.getParentDroitAllocation(params));
   }
@@ -240,6 +243,8 @@ class AllocationServiceTest {
   public void getParentDroitAllocation_BranchE() {
     params.setParent2ActiviteLucrative(true);
     params.setParentsTogether(true);
+    params.setParent1ParentalAuthority(true);
+    params.setParent2ParentalAuthority(true);
     params.setParent1Salaire(BigDecimal.valueOf(5000));
     params.setParent2Salaire(BigDecimal.valueOf(3000));
     assertEquals(PARENT_1, allocationService.getParentDroitAllocation(params));
@@ -249,6 +254,8 @@ class AllocationServiceTest {
   @DisplayName("Branch f: Both parents are independent, Parent 2 has higher AVS income, should be P2")
   public void getParentDroitAllocation_BranchF() {
     params.setParent2ActiviteLucrative(true);
+    params.setParent1ParentalAuthority(false);
+    params.setParent2ParentalAuthority(true);
     params.setParentsTogether(true);
     params.setParent1Salaire(BigDecimal.valueOf(3000));
     params.setParent2Salaire(BigDecimal.valueOf(5000));

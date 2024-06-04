@@ -32,4 +32,8 @@ public class Migrations {
       logger.debug("Test environment detected, DDL migrations done");
     }
   }
+
+  public void stop() {
+    // No need to close the connection here
+  }
 }

@@ -2,6 +2,8 @@ package ch.hearc.cafheg.infrastructure.persistance;
 
 import ch.hearc.cafheg.business.allocations.Allocataire;
 import ch.hearc.cafheg.business.allocations.NoAVS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -10,73 +12,93 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static ch.hearc.cafheg.infrastructure.persistance.Database.logger;
-
 public class AllocataireMapper extends Mapper {
 
-  private static final String QUERY_FIND_ALL = "SELECT NOM, PRENOM, NO_AVS FROM ALLOCATAIRES";
-  private static final String QUERY_FIND_WHERE_NOM_LIKE = "SELECT NOM, PRENOM, NO_AVS FROM ALLOCATAIRES WHERE NOM LIKE ?";
+  private static final Logger log = LoggerFactory.getLogger(AllocataireMapper.class);
+
+  private static final String QUERY_FIND_ALL = "SELECT NOM,PRENOM,NO_AVS FROM ALLOCATAIRES";
+  private static final String QUERY_FIND_WHERE_NOM_LIKE = "SELECT NOM,PRENOM,NO_AVS FROM ALLOCATAIRES WHERE NOM LIKE ?";
   private static final String QUERY_FIND_WHERE_NUMERO = "SELECT NO_AVS, NOM, PRENOM FROM ALLOCATAIRES WHERE NUMERO=?";
   private static final String QUERY_DELETE_BY_AVS = "DELETE FROM ALLOCATAIRES WHERE NO_AVS=?";
   private static final String QUERY_UPDATE = "UPDATE ALLOCATAIRES SET NOM=?, PRENOM=? WHERE NO_AVS=?";
   private static final String QUERY_SELECT_ALL_VERSEMENTS_WHERE_NUMERO = "SELECT * FROM VERSEMENTS WHERE NUMERO_ALLOCATAIRE=?";
   private static final String QUERY_FIND_BY_AVS = "SELECT NO_AVS, NOM, PRENOM FROM ALLOCATAIRES WHERE NO_AVS=?";
 
-  public List<Allocataire> findAll(String likeNom) {
-    try (Connection connection = activeJDBCConnection();
-         PreparedStatement preparedStatement = prepareFindAllStatement(connection, likeNom);
-         ResultSet resultSet = preparedStatement.executeQuery()) {
+  public List<Allocataire> findAll(String likeNom) throws SQLException {
+    System.out.println("findAll() " + likeNom);
+    Connection connection = activeJDBCConnection();
+    try {
+      PreparedStatement preparedStatement;
+      if (likeNom == null) {
+        System.out.println("SQL: " + QUERY_FIND_ALL);
+        preparedStatement = connection
+                .prepareStatement(QUERY_FIND_ALL);
+      } else {
 
-      List<Allocataire> allocataires = new ArrayList<>();
-      while (resultSet.next()) {
-        allocataires.add(mapAllocataire(resultSet));
+        System.out.println("SQL: " + QUERY_FIND_WHERE_NOM_LIKE);
+        preparedStatement = connection
+                .prepareStatement(QUERY_FIND_WHERE_NOM_LIKE);
+        preparedStatement.setString(1, likeNom + "%");
       }
-      return allocataires;
-    } catch (SQLException e) {
-      throw new RuntimeException("Error finding all allocataires", e);
-    }
-  }
+      System.out.println("Allocation d'un nouveau tableau");
+      List<Allocataire> allocataires = new ArrayList<>();
 
-  private PreparedStatement prepareFindAllStatement(Connection connection, String likeNom) throws SQLException {
-    if (likeNom == null) {
-      return connection.prepareStatement(QUERY_FIND_ALL);
-    } else {
-      PreparedStatement preparedStatement = connection.prepareStatement(QUERY_FIND_WHERE_NOM_LIKE);
-      preparedStatement.setString(1, likeNom + "%");
-      return preparedStatement;
-    }
-  }
-
-  public Allocataire findById(long id) {
-    try (Connection connection = activeJDBCConnection();
-         PreparedStatement preparedStatement = connection.prepareStatement(QUERY_FIND_WHERE_NUMERO)) {
-
-      preparedStatement.setLong(1, id);
+      System.out.println("Exécution de la requête");
       try (ResultSet resultSet = preparedStatement.executeQuery()) {
-        if (resultSet.next()) {
-          return mapAllocataire(resultSet);
-        } else {
-          return null;
+
+        System.out.println("Allocataire mapping");
+        while (resultSet.next()) {
+          System.out.println("ResultSet#next");
+          allocataires
+                  .add(new Allocataire(new NoAVS(resultSet.getString(3)), resultSet.getString(2),
+                          resultSet.getString(1)));
         }
       }
+      System.out.println("Allocataires trouvés " + allocataires.size());
+      return allocataires;
     } catch (SQLException e) {
-      throw new RuntimeException("Error finding allocataire by ID", e);
+      throw new RuntimeException(e);
     }
   }
 
+  public Allocataire findById(long id) throws SQLException {
+    System.out.println("findById() " + id);
+    Connection connection = activeJDBCConnection();
+    try {
+      System.out.println("SQL:" + QUERY_FIND_WHERE_NUMERO);
+      PreparedStatement preparedStatement = connection.prepareStatement(QUERY_FIND_WHERE_NUMERO);
+      preparedStatement.setLong(1, id);
+      ResultSet resultSet = preparedStatement.executeQuery();
+      System.out.println("ResultSet#next");
+      resultSet.next();
+      System.out.println("Allocataire mapping");
+      return new Allocataire(new NoAVS(resultSet.getString(1)),
+              resultSet.getString(2), resultSet.getString(3));
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
   public Allocataire findByAvsNumber(String avsNumber) {
+    log.debug("Finding allocataire by AVS number: {}", avsNumber);
     try (Connection connection = activeJDBCConnection();
          PreparedStatement preparedStatement = connection.prepareStatement(QUERY_FIND_BY_AVS)) {
 
       preparedStatement.setString(1, avsNumber);
       try (ResultSet resultSet = preparedStatement.executeQuery()) {
         if (resultSet.next()) {
-          return mapAllocataire(resultSet);
+          log.debug("Allocataire found: {}", avsNumber);
+          return new Allocataire(
+                  new NoAVS(resultSet.getString(1)),
+                  resultSet.getString(2),
+                  resultSet.getString(3)
+          );
         } else {
+          log.debug("Allocataire not found: {}", avsNumber);
           return null;
         }
       }
     } catch (SQLException e) {
+      log.error("Error finding allocataire by AVS number", e);
       throw new RuntimeException("Error finding allocataire by AVS number", e);
     }
   }
@@ -84,7 +106,7 @@ public class AllocataireMapper extends Mapper {
   public boolean hasPayments(String avsNumber) {
     try (Connection connection = activeJDBCConnection()) {
       if (connection.isClosed()) {
-        logger.error("Connection is closed before query execution");
+        log.error("Connection is closed before query execution");
         throw new SQLException("Connection is closed");
       }
       try (PreparedStatement preparedStatement = connection.prepareStatement(QUERY_SELECT_ALL_VERSEMENTS_WHERE_NUMERO)) {
@@ -136,7 +158,4 @@ public class AllocataireMapper extends Mapper {
     }
   }
 
-  private Allocataire mapAllocataire(ResultSet resultSet) throws SQLException {
-    return new Allocataire(new NoAVS(resultSet.getString("NO_AVS")), resultSet.getString("NOM"), resultSet.getString("PRENOM"));
-  }
 }

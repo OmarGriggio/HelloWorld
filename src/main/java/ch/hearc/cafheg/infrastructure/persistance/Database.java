@@ -18,9 +18,8 @@ public class Database {
   public static Connection activeJDBCConnection() {
     Connection conn = connection.get();
     if (conn == null) {
-      RuntimeException e = new RuntimeException("No active JDBC connection");
-      logger.error("No active JDBC connection", e);
-      throw e;
+      logger.error("No active JDBC connection");
+      throw new RuntimeException("No active JDBC connection");
     }
     try {
       if (conn.isClosed()) {
@@ -31,21 +30,34 @@ public class Database {
       logger.error("Error checking connection status", e);
       throw new RuntimeException(e);
     }
+    logger.debug("Returning active connection: {}", conn);
     return conn;
   }
 
-  public static <T> T inTransaction(Supplier<T> inTransaction) {
+  public static <T> T inTransaction(Supplier<T> inTransaction) throws SQLException {
     logger.debug("Transaction start");
     try {
       if (connection.get() == null || connection.get().isClosed()) {
         logger.debug("Transaction: getConnection");
         connection.set(dataSource.getConnection());
+        logger.debug("Connection set in ThreadLocal: {}", connection.get());
       }
       return inTransaction.get();
     } catch (Exception e) {
       logger.error("Transaction error when getting connection", e);
       throw new RuntimeException(e);
     } finally {
+      if (connection.get() != null && !connection.get().isClosed()) {
+        try {
+          logger.debug("Transaction, close connection");
+          connection.get().close();
+          connection.remove();
+          logger.debug("Connection closed and removed from ThreadLocal");
+        } catch (SQLException e) {
+          logger.error("Transaction error when closing connection", e);
+          throw new RuntimeException(e);
+        }
+      }
       logger.debug("Transaction end");
     }
   }
@@ -59,6 +71,7 @@ public class Database {
     dataSource = new HikariDataSource(config);
     try {
       connection.set(dataSource.getConnection());
+      logger.debug("Connection set in ThreadLocal: {}", connection.get());
     } catch (SQLException e) {
       logger.error("Error getting connection", e);
       throw new RuntimeException(e);
@@ -69,8 +82,10 @@ public class Database {
   public void stop() {
     try {
       if (connection.get() != null && !connection.get().isClosed()) {
+        logger.debug("Stopping, close connection");
         connection.get().close();
         connection.remove();
+        logger.debug("Connection closed and removed from ThreadLocal");
       }
     } catch (SQLException e) {
       logger.error("Error stopping the database", e);
