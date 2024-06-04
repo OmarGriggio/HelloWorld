@@ -105,15 +105,15 @@ public class AllocationService {
         }
 
         // Branch e: Parents live together, both salaried or one salaried, one independent
-                if (params.isParent1Salaried() || params.isParent2Salaried()) {
-                  if (params.getParent1Salaire().compareTo(BigDecimal.valueOf(2000)) < 0) {
-                    return PARENT_1;
-                  }
-                  if (params.getParent2Salaire().compareTo(BigDecimal.valueOf(2000)) < 0) {
-                    return PARENT_2;
-                  }
-                  return params.getParent1Salaire().compareTo(params.getParent2Salaire()) > 0 ? PARENT_1 : PARENT_2;
-                }
+        if (params.isParent1Salaried() || params.isParent2Salaried()) {
+          if (params.getParent1Salaire().compareTo(BigDecimal.valueOf(2000)) < 0) {
+            return PARENT_1;
+          }
+          if (params.getParent2Salaire().compareTo(BigDecimal.valueOf(2000)) < 0) {
+            return PARENT_2;
+          }
+          return params.getParent1Salaire().compareTo(params.getParent2Salaire()) > 0 ? PARENT_1 : PARENT_2;
+        }
 
 
         // Branch f: Parents live together, both independent
@@ -125,11 +125,6 @@ public class AllocationService {
 
     throw new IllegalArgumentException("Invalid parameters for determining right allocation parent.");
   }
-
-
-
-
-
 
   public void updateAllocataire(String avsNumber, String newNom, String newPrenom) {
     Allocataire existingAllocataire = allocataireMapper.findByAvsNumber(avsNumber);
@@ -149,15 +144,11 @@ public class AllocationService {
   }
 
   public void deleteAllocataire(String avsNumber) {
+    log.debug("Deleting allocataire with AVS number: {}", avsNumber);
     Allocataire allocataire = allocataireMapper.findByAvsNumber(avsNumber);
     if (allocataire == null) {
+      log.error("Allocataire not found for AVS number: {}", avsNumber);
       throw new IllegalArgumentException("Allocataire not found");
     }
-
-    if (allocataireMapper.hasPayments(allocataire.getNoAVS().toString())) {
-      throw new IllegalArgumentException("Cannot delete allocataire with payments");
-    }
-
-    allocataireMapper.deleteByAvsNumber(allocataire.getNoAVS().toString());
   }
 }

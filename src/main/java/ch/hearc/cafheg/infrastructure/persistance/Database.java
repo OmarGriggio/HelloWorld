@@ -41,6 +41,18 @@ public class Database {
         logger.debug("Transaction: getConnection");
         connection.set(dataSource.getConnection());
         logger.debug("Connection set in ThreadLocal: {}", connection.get());
+      } else {
+        try {
+          if (connection.get().isClosed()) {
+            logger.debug("Connection is closed, removing from ThreadLocal");
+            connection.remove();
+            connection.set(dataSource.getConnection());
+            logger.debug("New connection set in ThreadLocal: {}", connection.get());
+          }
+        } catch (SQLException e) {
+          logger.error("Error checking connection status", e);
+          throw new RuntimeException(e);
+        }
       }
       return inTransaction.get();
     } catch (Exception e) {
@@ -61,6 +73,7 @@ public class Database {
       logger.debug("Transaction end");
     }
   }
+
 
   public void start() {
     logger.info("Initializing datasource");

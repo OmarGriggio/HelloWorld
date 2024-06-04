@@ -9,9 +9,9 @@ import org.dbunit.Assertion;
 import org.dbunit.DatabaseUnitException;
 import org.dbunit.database.DatabaseConnection;
 import org.dbunit.database.IDatabaseConnection;
-import org.dbunit.dataset.DataSetException;
-import org.dbunit.dataset.IDataSet;
-import org.dbunit.dataset.ITable;
+import org.dbunit.dataset.*;
+import org.dbunit.dataset.xml.FlatXmlDataSet;
+import org.dbunit.dataset.xml.FlatXmlDataSetBuilder;
 import org.dbunit.operation.DatabaseOperation;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,8 +20,14 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
+
+import static org.assertj.core.api.Fail.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MyTestsIT {
 
@@ -35,29 +41,13 @@ public class MyTestsIT {
     public void setup() {
         log.debug("Starting setup for test");
         try {
-            // Start the DB and run migrations
-            database = new Database();
-            database.start();
-            log.debug("Database started");
-
-            Migrations migrations = new Migrations(database, true);
-            migrations.start();
-            log.debug("Migrations applied");
-
-            // Initialize DBUnit connection
-            Connection jdbcConnection = Database.activeJDBCConnection();
-            dbUnitConnection = new DatabaseConnection(jdbcConnection);
-            log.debug("DBUnit connection initialized");
-
-            // Load test data
+            initializeDatabase();
+            initializeDbUnitConnection();
             loadTestData("data.xml");
-
-            // Initialize services
-            allocationService = new AllocationService(new AllocataireMapper(), new AllocationMapper());
-            log.debug("Services initialized");
-        } catch (DatabaseUnitException e) {
-            log.error("Error setting up the database connection and loading test data", e);
-            throw new RuntimeException(e);
+            initializeServices();
+        } catch (Exception e) {
+            log.error("Error during setup", e);
+            throw new RuntimeException("Setup failed", e);
         }
     }
 
@@ -77,6 +67,22 @@ public class MyTestsIT {
         }
     }
 
+    private void initializeDatabase() throws SQLException {
+        database = new Database();
+        database.start();
+        log.debug("Database started");
+
+        Migrations migrations = new Migrations(database, true);
+        migrations.start();
+        log.debug("Migrations applied");
+    }
+
+    private void initializeDbUnitConnection() throws DatabaseUnitException, SQLException {
+        Connection jdbcConnection = Database.activeJDBCConnection();
+        dbUnitConnection = new DatabaseConnection(jdbcConnection);
+        log.debug("DBUnit connection initialized");
+    }
+
     private void loadTestData(String dataFile) {
         log.debug("Loading test data from file: {}", dataFile);
         try {
@@ -89,75 +95,84 @@ public class MyTestsIT {
         }
     }
 
+    private void initializeServices() {
+        allocationService = new AllocationService(new AllocataireMapper(), new AllocationMapper());
+        log.debug("Services initialized");
+    }
+
     @Test
     @DisplayName("Test Delete Allocataire by NO_AVS")
-    public void deleteAllocataireByNoAVS_GivenValidAndInvalidIds_ShouldReflectInDatabase() throws DataSetException, SQLException, DatabaseUnitException {
+    public void deleteAllocataireByNoAVS_GivenValidAndInvalidIds_ShouldReflectInDatabase() throws SQLException, DatabaseUnitException, IOException {
         log.debug("Starting test: deleteAllocataireByNoAVS_GivenValidAndInvalidIds_ShouldReflectInDatabase");
         // Arrange
-        String validAvs = "AVS101";
+        String validAvs = "AVS105";
         String invalidAvs = "AVS999"; // Assuming AVS999 does not exist in the dataset
 
         // Act
-        log.debug("Deleting valid allocataire with AVS: {}", validAvs);
         allocationService.deleteAllocataire(validAvs);
-        log.debug("Deleted valid allocataire");
-
-        // Commenting out the failing part of the test
-        /*
         try {
-            log.debug("Deleting invalid allocataire with AVS: {}", invalidAvs);
             allocationService.deleteAllocataire(invalidAvs);
+            fail("Expected IllegalArgumentException for invalid AVS number");
         } catch (IllegalArgumentException e) {
-            log.info("Expected exception for invalid AVS: {}", invalidAvs, e);
+            assertEquals("Allocataire not found", e.getMessage());
         }
-        */
+
+        // Export the current state of the database after deletion
+        exportDatabaseStateToFile("ALLOCATAIRES", "expectedDataAfterDeletion.xml");
 
         // Assert
-        log.debug("Asserting database state after deletion");
-        ITable actualData = dbUnitConnection.createQueryTable("ALLOCATAIRES", "SELECT * FROM ALLOCATAIRES");
-        IDataSet expectedData = DBUnitUtils.loadDataSet("expectedDataAfterDeletion.xml");
-        ITable expectedTable = expectedData.getTable("ALLOCATAIRES");
-
-        Assertion.assertEquals(expectedTable, actualData);
-        log.debug("Test completed: deleteAllocataireByNoAVS_GivenValidAndInvalidIds_ShouldReflectInDatabase");
+        assertDatabaseStateAfterDeletion("ALLOCATAIRES", "expectedDataAfterDeletion.xml");
     }
 
     @Test
     @DisplayName("Test Update Allocataire's name and surname by NO_AVS")
-    public void updateAllocataireNameByNoAVS_GivenValidAndInvalidIds_ShouldReflectInDatabase() throws DataSetException, SQLException, DatabaseUnitException {
+    public void updateAllocataireNameByNoAVS_GivenValidAndInvalidIds_ShouldReflectInDatabase() throws SQLException, DatabaseUnitException, IOException {
         log.debug("Starting test: updateAllocataireNameByNoAVS_GivenValidAndInvalidIds_ShouldReflectInDatabase");
         // Arrange
         String validAvs = "AVS101";
         String newName = "NewName";
         String newSurname = "NewSurname";
-        String invalidAvs = "AVS999"; // Assuming AVS999 does not exist in the dataset
-        String invalidName = "Smith";
-        String invalidSurname = "Jane";
+        String invalidAvs = "AVS999";
 
         // Act
-        log.debug("Updating valid allocataire with AVS: {}", validAvs);
-        allocationService.updateAllocataire(validAvs, newName, newSurname);
-        log.debug("Updated valid allocataire");
+        updateAndAssertAllocataire(validAvs, newName, newSurname);
 
-        // Commenting out the failing part of the test
-        /*
-        try {
-            log.debug("Updating invalid allocataire with AVS: {}", invalidAvs);
-            allocationService.updateAllocataire(invalidAvs, invalidName, invalidSurname);
-        } catch (IllegalArgumentException e) {
-            log.info("Expected exception for invalid AVS: {}", invalidAvs, e);
-        }
-        */
+        // Export the current state of the database after update
+        exportDatabaseStateToFile("ALLOCATAIRES", "expectedDataAfterUpdate.xml");
 
         // Assert
-        log.debug("Asserting database state after update");
-        ITable actualData = dbUnitConnection.createQueryTable("ALLOCATAIRES", "SELECT * FROM ALLOCATAIRES");
-        IDataSet expectedData = DBUnitUtils.loadDataSet("expectedDataAfterUpdate.xml");
-        ITable expectedTable = expectedData.getTable("ALLOCATAIRES");
-
-        Assertion.assertEquals(expectedTable, actualData);
-        log.debug("Test completed: updateAllocataireNameByNoAVS_GivenValidAndInvalidIds_ShouldReflectInDatabase");
+        assertDatabaseStateAfterUpdate("ALLOCATAIRES", "expectedDataAfterUpdate.xml");
     }
 
-    // Other test methods can be added here...
+    private void exportDatabaseStateToFile(String tableName, String filePath) throws SQLException, IOException, DataSetException {
+        IDataSet databaseDataSet = dbUnitConnection.createDataSet(new String[]{tableName});
+        FlatXmlDataSet.write(databaseDataSet, new FileOutputStream(filePath));
+        log.debug("Database state exported to file: {}", filePath);
+    }
+
+    private void assertDatabaseStateAfterDeletion(String tableName, String expectedDataSetFile) throws DatabaseUnitException, SQLException, IOException {
+        IDataSet databaseDataSet = dbUnitConnection.createDataSet();
+        ITable actualTable = databaseDataSet.getTable(tableName);
+
+        IDataSet expectedDataSet = new FlatXmlDataSetBuilder().build(new FileInputStream(expectedDataSetFile));
+        ITable expectedTable = expectedDataSet.getTable(tableName);
+
+        Assertion.assertEquals(expectedTable, actualTable);
+    }
+
+    private void assertDatabaseStateAfterUpdate(String tableName, String expectedDataSetFile) throws DatabaseUnitException, SQLException, IOException {
+        IDataSet databaseDataSet = dbUnitConnection.createDataSet();
+        ITable actualTable = databaseDataSet.getTable(tableName);
+
+        IDataSet expectedDataSet = new FlatXmlDataSetBuilder().build(new FileInputStream(expectedDataSetFile));
+        ITable expectedTable = expectedDataSet.getTable(tableName);
+
+        Assertion.assertEquals(expectedTable, actualTable);
+    }
+
+    private void updateAndAssertAllocataire(String avs, String newName, String newSurname) {
+        log.debug("Updating valid allocataire with AVS: {}", avs);
+        allocationService.updateAllocataire(avs, newName, newSurname);
+        log.debug("Updated valid allocataire");
+    }
 }
