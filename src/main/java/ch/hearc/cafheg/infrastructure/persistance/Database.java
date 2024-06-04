@@ -2,70 +2,110 @@ package ch.hearc.cafheg.infrastructure.persistance;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.function.Supplier;
-import javax.sql.DataSource;
 
 public class Database {
-  /** Pool de connections JDBC */
   private static DataSource dataSource;
-
-  /** Connection JDBC active par utilisateur/thread (ThreadLocal) */
+  static Logger logger = LoggerFactory.getLogger(Database.class);
   private static final ThreadLocal<Connection> connection = new ThreadLocal<>();
 
-  /**
-   * Retourne la transaction active ou throw une Exception si pas de transaction
-   * active.
-   * @return Connection JDBC active
-   */
-  static Connection activeJDBCConnection() {
-    if(connection.get() == null) {
-      throw new RuntimeException("Pas de connection JDBC active");
+  public static Connection activeJDBCConnection() {
+    Connection conn = connection.get();
+    if (conn == null) {
+      logger.error("No active JDBC connection");
+      throw new RuntimeException("No active JDBC connection");
     }
-    return connection.get();
+    try {
+      if (conn.isClosed()) {
+        logger.error("Connection is closed");
+        throw new RuntimeException("Connection is closed");
+      }
+    } catch (SQLException e) {
+      logger.error("Error checking connection status", e);
+      throw new RuntimeException(e);
+    }
+    logger.debug("Returning active connection: {}", conn);
+    return conn;
   }
 
-  /**
-   * Exécution d'une fonction dans une transaction.
-   * @param inTransaction La fonction a éxécuter au travers d'une transaction
-   * @param <T> Le type du retour de la fonction
-   * @return Le résultat de l'éxécution de la fonction
-   */
-  public static <T> T inTransaction(Supplier<T> inTransaction) {
-    System.out.println("inTransaction#start");
+  public static <T> T inTransaction(Supplier<T> inTransaction) throws SQLException {
+    logger.debug("Transaction start");
     try {
-      System.out.println("inTransaction#getConnection");
-      connection.set(dataSource.getConnection());
+      if (connection.get() == null || connection.get().isClosed()) {
+        logger.debug("Transaction: getConnection");
+        connection.set(dataSource.getConnection());
+        logger.debug("Connection set in ThreadLocal: {}", connection.get());
+      } else {
+        try {
+          if (connection.get().isClosed()) {
+            logger.debug("Connection is closed, removing from ThreadLocal");
+            connection.remove();
+            connection.set(dataSource.getConnection());
+            logger.debug("New connection set in ThreadLocal: {}", connection.get());
+          }
+        } catch (SQLException e) {
+          logger.error("Error checking connection status", e);
+          throw new RuntimeException(e);
+        }
+      }
       return inTransaction.get();
     } catch (Exception e) {
+      logger.error("Transaction error when getting connection", e);
       throw new RuntimeException(e);
     } finally {
-      try {
-        System.out.println("inTransaction#closeConnection");
-        connection.get().close();
-      } catch (SQLException e) {
-        throw new RuntimeException(e);
+      if (connection.get() != null && !connection.get().isClosed()) {
+        try {
+          logger.debug("Transaction, close connection");
+          connection.get().close();
+          connection.remove();
+          logger.debug("Connection closed and removed from ThreadLocal");
+        } catch (SQLException e) {
+          logger.error("Transaction error when closing connection", e);
+          throw new RuntimeException(e);
+        }
       }
-      System.out.println("inTransaction#end");
-      connection.remove();
+      logger.debug("Transaction end");
     }
   }
 
-  DataSource dataSource() {
-    return dataSource;
-  }
 
-  /**
-   * Initialisation du pool de connections.
-   */
   public void start() {
-    System.out.println("Initializing datasource");
+    logger.info("Initializing datasource");
     HikariConfig config = new HikariConfig();
     config.setJdbcUrl("jdbc:h2:mem:sample");
     config.setMaximumPoolSize(20);
     config.setDriverClassName("org.h2.Driver");
     dataSource = new HikariDataSource(config);
-    System.out.println("Datasource initialized");
+    try {
+      connection.set(dataSource.getConnection());
+      logger.debug("Connection set in ThreadLocal: {}", connection.get());
+    } catch (SQLException e) {
+      logger.error("Error getting connection", e);
+      throw new RuntimeException(e);
+    }
+    logger.info("Datasource initialized");
+  }
+
+  public void stop() {
+    try {
+      if (connection.get() != null && !connection.get().isClosed()) {
+        logger.debug("Stopping, close connection");
+        connection.get().close();
+        connection.remove();
+        logger.debug("Connection closed and removed from ThreadLocal");
+      }
+    } catch (SQLException e) {
+      logger.error("Error stopping the database", e);
+    }
+  }
+
+  DataSource dataSource() {
+    return dataSource;
   }
 }

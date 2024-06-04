@@ -10,6 +10,7 @@ import ch.hearc.cafheg.infrastructure.persistance.AllocataireMapper;
 import ch.hearc.cafheg.infrastructure.persistance.EnfantMapper;
 import ch.hearc.cafheg.infrastructure.persistance.VersementMapper;
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +35,7 @@ class VersementServiceTest {
   }
 
   @Test
-  void findSommeAllocationNaissanceParAnnee() {
+  void findSommeAllocationNaissanceParAnnee() throws SQLException {
     Mockito.when(versementMapper
         .findAllVersementAllocationNaissance()).thenReturn(
         Arrays.asList(new VersementAllocationNaissance(new Montant(new BigDecimal(2000)),
@@ -51,7 +52,7 @@ class VersementServiceTest {
   }
 
   @Test
-  void findSommeAllocationParAnnee() {
+  void findSommeAllocationParAnnee() throws SQLException {
     Mockito.when(versementMapper
         .findAllVersementAllocation()).thenReturn(
         Arrays.asList(new VersementAllocation(new Montant(new BigDecimal(2000)),
@@ -70,7 +71,7 @@ class VersementServiceTest {
   }
 
   @Test
-  void exportPDFAllocataire() {
+  void exportPDFAllocataire() throws SQLException {
     Mockito.when(versementMapper.findVersementParentEnfant()).thenReturn(
         Arrays.asList(new VersementParentEnfant(1L, 10L, new Montant(new BigDecimal(1000))),
             new VersementParentEnfant(1L, 11L, new Montant(new BigDecimal(500))),
@@ -90,7 +91,7 @@ class VersementServiceTest {
   }
 
   @Test
-  void exportPDFVersements() {
+  void exportPDFVersements() throws SQLException {
     Mockito.when(versementMapper.findVersementParentEnfantParMois()).thenReturn(
         Arrays.asList(new VersementParentParMois(1L, new Montant(new BigDecimal(1000)),
                 LocalDate.of(2020, 1, 1), LocalDate.of(2020, 1, 1)),
